@@ -1,0 +1,179 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>3.5. Shared Libraries</title><link rel="stylesheet" href="cs.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.74.0"><link rel="home" href="index.html" title="Sourcery G++ Lite"><link rel="up" href="chap-target.html" title="Chapter 3. Sourcery G++ Lite for ColdFire uClinux"><link rel="prev" href="ch03s04.html" title="3.4. Compiler Features"><link rel="next" href="uclinux-gdbserver.html" title="3.6. GDB Server"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">3.5. Shared Libraries</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch03s04.html">Prev</a> </td><th width="60%" align="center">Chapter 3. Sourcery G++ Lite for ColdFire uClinux</th><td width="20%" align="right"> <a accesskey="n" href="uclinux-gdbserver.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id279297"></a>3.5. Shared Libraries</h2></div></div></div><p>
+    A uClinux system allows programs to share code using a simple
+    form of shared library.  You can enable or disable support for
+    this feature using the kernel's
+    <code class="varname">CONFIG_BINFMT_SHARED_FLAT</code> configuration
+    option.  In this section we give a short overview of how the
+    system works and describe how you can use it with Sourcery G++.
+  </p><p>
+    It should be noted at the outset that the uClinux shared
+    library model is very different from the ELF one.  In uClinux's
+    model, the kernel itself is responsible for loading shared
+    libraries; there is no separate dynamic loader and no equivalent
+    of <code class="filename">libdl</code>.  In fact, the libraries have no
+    symbol table and very little other dynamic information.
+    They are purely a means of sharing code.
+  </p><p>
+    Programs on uClinux are in general made up of one executable
+    object and zero or more shared library objects.  Each of these
+    objects is given a numerical identifier, with 0 referring to the
+    executable and higher numbers referring to the shared libraries.
+    Shared library identifiers are unique across the system and the
+    library with identifier <em class="replaceable"><code>N</code></em> must be
+    placed in the file
+    <code class="filename">/lib/lib<em class="replaceable"><code>N</code></em>.so</code>.
+  </p><p>
+    There is a fixed limit to the number of objects that a
+    program can use.  This limit is determined by the kernel's
+    <code class="varname">MAX_SHARED_LIBS</code> macro, which is defined in
+    <code class="filename">include/linux/flat.h</code> and usually has the value
+    4.  Because identifier 0 always refers to the executable, and
+    because shared library identifiers are unique across the system,
+    this default allows at most three shared libraries:
+    <code class="filename">/lib/lib1.so</code>, <code class="filename">/lib/lib2.so</code>
+    and <code class="filename">/lib/lib3.so</code>.
+  </p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279379"></a>3.5.1. Important Restrictions</h3></div></div></div><p>
+      Applications that use shared libraries cannot be debugged
+      with GDB and the <span class="command"><strong>gdbserver</strong></span> utility, as the current
+      versions of these tools do not include shared library support.
+    </p><p>
+      In addition, POSIX threads cannot be used with shared libraries;
+      the <code class="option">-lpthread</code> linker option is incompatible
+      with <code class="option">-mid-shared-library</code>.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279408"></a>3.5.2. Using Shared Libraries</h3></div></div></div><p>
+      From a development perspective, a shared library
+      <em class="replaceable"><code>libA</code></em> is stored in two files: the
+      main <code class="filename"><em class="replaceable"><code>libA</code></em></code> file
+      and an auxiliary
+      <code class="filename"><em class="replaceable"><code>libA</code></em>.gdb</code> file.
+      <code class="filename"><em class="replaceable"><code>libA</code></em></code> is the flat
+      file that should be installed in the target system's
+      <code class="filename">/lib</code> directory while
+      <code class="filename"><em class="replaceable"><code>libA</code></em>.gdb</code> is an
+      ELF representation used for linking and debugging.
+    </p><p>
+      Code that uses shared libraries must be compiled and linked
+      using the <code class="option">-mid-shared-library</code> option.  You can link
+      against a library <em class="replaceable"><code>libA</code></em> using the
+      <code class="option">-Wl,-R,<em class="replaceable"><code>libA</code></em>.gdb</code> option.
+      For example:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library main.c -Wl,-R,libA.gdb</pre><p>
+
+      creates an executable from <code class="filename">main.c</code> and
+      links it against the ELF representation of
+      <code class="filename">libA</code>.
+    </p><p>
+      If you change a shared library, you must relink every shared
+      library or executable that depends on it.  This is because
+      library addresses are resolved at the time the object is
+      linked against a shared library (rather than at load time as
+      happens for ELF shared libraries).  For safety reasons, the
+      kernel refuses to run a program that is older than a dependent
+      library.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279506"></a>3.5.3. Prebuilt Shared C Libraries</h3></div></div></div><p>
+      Sourcery G++ Lite contains precompiled shared C libraries for each
+      supported architecture.  These libraries contain the complete
+      contents of the equivalent static C library.
+    </p><p>
+      You can obtain the pathname of an architecture's shared C
+      library using:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library <em class="replaceable"><code>cflags</code></em> \
+    --print-file-name=libc</pre><p>
+
+      where <em class="replaceable"><code>cflags</code></em> are the compiler flags
+      associated with your target architecture.  For example:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library -mcpu=5208 \
+    --print-file-name=libc</pre><p>
+
+      prints the library that is intended for use with the M5208
+      core.  These libraries have shared library identifier 1. If
+      you want to use the library for your architecture, you should
+      copy it to <code class="filename">/lib/lib1.so</code> on the target
+      system.  You do not need to copy the associated
+      <code class="filename">libc.gdb</code> as it is found automatically
+      during the compilation.</p><p>If you use the <code class="option">-mid-shared-library</code> option,
+      the compiler links against the shared C library by default.
+      You can suppress this behavior using the
+      <code class="option">-static-libc</code> option.  For example:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library -mcpu=m5208 main.c</pre><p>
+
+      links <code class="filename">main.c</code> against the shared C library.
+      Whereas:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library -mcpu=m5208 main.c \
+    -static-libc</pre><p>
+
+      uses the static version instead.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279588"></a>3.5.4. Building New Shared Libraries</h3></div></div></div><p>
+      The procedure for building a shared library is essentially
+      the same as that for building an executable.  The only difference
+      is that you must also link with the
+      <code class="option">-mshared-library-id=<em class="replaceable"><code>N</code></em></code>,
+      option, where <em class="replaceable"><code>N</code></em> is the library's
+      unique identifier.  For example:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library libA.c -o libA \
+    -mshared-library-id=2</pre><p>
+
+      creates a flat library <code class="filename">libA</code> with
+      shared library identifier 2.  It also creates the associated
+      ELF file, <code class="filename">libA.gdb</code>.
+    </p><p>
+      It is also possible to convert a static library into a shared
+      library using a command such as:
+
+      </p><pre class="screen">m68k-uclinux-gcc -mid-shared-library -o lib<em class="replaceable"><code>X</code></em> \
+    -Wl,--whole-archive,-l<em class="replaceable"><code>X</code></em>,--no-whole-archive \
+    -mshared-library-id=<em class="replaceable"><code>N</code></em></pre><p>
+
+      This command creates a shared version of
+      <code class="filename">lib<em class="replaceable"><code>X</code></em>.a</code> and gives
+      it identifier <em class="replaceable"><code>N</code></em>.
+    </p><p>
+      The commands above usually export every global symbol to users
+      of the library.  As with ELF libraries, you can override this
+      behavior for particular symbols using GCC's
+      <code class="code">visibility</code> attribute.  For example:
+
+      </p><pre class="screen">void foo (void) __attribute__((visibility("hidden")));</pre><p>
+
+      makes <code class="varname">foo</code> local to the shared library that
+      contains it.
+    </p><p>
+      You can link shared libraries against other shared libraries using
+      the same <code class="option">-Wl,-R,<em class="replaceable"><code>libA</code></em>.gdb</code>
+      option that is used for executables.  Libraries are initialized in
+      order of increasing identifier (and finalized in reverse order) so
+      the output library should generally have a higher identifier than
+      the libraries it depends on.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279695"></a>3.5.5. Symbol Binding</h3></div></div></div><p>
+      All symbol references are resolved when the shared library
+      is linked.  In ELF terms, it is as if the library were linked with
+      <code class="option">-Bsymbolic</code>.  Thus if an executable overrides a
+      symbol that a shared library also defines, the shared library
+      continues to use its own definition of the symbol; it does
+      not use the executable's definition.
+    </p><p>
+      The same rule applies to cases in which the linker would
+      normally remove duplicate definitions.  For example, if
+      several C++ objects which are linked together instantiate
+      the same template function, the linker normally ensures that
+      the output file contains only one definition of that function.
+      However, if a shared library and executable both instantiate
+      the same template function, the library and executable have
+      separate definitions of that function.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id274538"></a>3.5.6. Traditional Build Procedure</h3></div></div></div><p>
+      The procedure described in this manual is specific to
+      Sourcery G++.  The traditional procedure for building shared
+      libraries is more complicated, and is <a class="ulink" href="http://www.ucdot.org/article.pl?sid=03/11/25/1126257&amp;mode=thread" target="_top">
+      described on the uCdot web page</a>.  We do not recommend
+      using that procedure in new build systems, but if you do need
+      to use it, the procedure works with Sourcery G++.  In contrast
+      to the recommended system, the traditional procedure does not
+      allow either the libraries or executables to use static
+      constructors, static destructors, or exceptions.
+    </p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch03s04.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="chap-target.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="uclinux-gdbserver.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">3.4. Compiler Features </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 3.6. GDB Server</td></tr></table></div></body></html>

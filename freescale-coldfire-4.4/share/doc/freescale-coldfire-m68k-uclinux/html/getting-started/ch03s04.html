@@ -1,0 +1,43 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>3.4. Compiler Features</title><link rel="stylesheet" href="cs.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.74.0"><link rel="home" href="index.html" title="Sourcery G++ Lite"><link rel="up" href="chap-target.html" title="Chapter 3. Sourcery G++ Lite for ColdFire uClinux"><link rel="prev" href="ch03s03.html" title="3.3. Building uClinux Applications"><link rel="next" href="ch03s05.html" title="3.5. Shared Libraries"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">3.4. Compiler Features</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch03s03.html">Prev</a> </td><th width="60%" align="center">Chapter 3. Sourcery G++ Lite for ColdFire uClinux</th><td width="20%" align="right"> <a accesskey="n" href="ch03s05.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id279200"></a>3.4. Compiler Features</h2></div></div></div><p>The Sourcery G++ compiler for ColdFire uClinux has a few
+  features of interest to uClinux systems.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279209"></a>3.4.1. Data Alignment</h3></div></div></div><p>
+      GCC allows you to increase the alignment of data using the
+      <code class="code">__aligned__</code> attribute.  For example:
+
+      </p><pre class="screen">int x __attribute__((__aligned__ (8)))</pre><p>
+
+      increases the alignment of <code class="varname">x</code> to 8 bytes.
+      However, the maximum data alignment you can achieve on uClinux
+      indirectly depends on the setting of the kernel's
+      <code class="varname">CONFIG_BINFMT_SHARED_FLAT</code> configuration
+      option.  If the option is not set, the maximum alignment is 4
+      bytes.  If the option is set, the maximum alignment is 16
+      bytes.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279240"></a>3.4.2. Position-Independent Code</h3></div></div></div><p>
+      A uClinux system supports a form of position-independent code
+      in which the program text is read-only and in which the data
+      can be moved to an arbitrary address.  Such code is slightly
+      larger than non-position-independent code, but it allows the
+      program text to be run from ROM, or from a RAM copy that can
+      be shared between processes.
+    </p><p>
+      You can select position-independent code using the standard
+      GCC PIC options (<code class="option">-fpic</code>, <code class="option">-fPIC</code>,
+      <code class="option">-fpie</code> and <code class="option">-fPIE</code>).  You can also
+      select it using the M68K-specific <code class="option">-msep-data</code>
+      option, which names the particular kind of PIC that uClinux uses.
+      All these options are equivalent.
+    </p><p>
+      On a uClinux system, position-independent code is not
+      compatible with non-position-independent code.  You must
+      either compile and link everything as PIC, or compile and link
+      everything as non-PIC.  Sourcery G++ provides both PIC and
+      non-PIC libraries and uses the linker options to automatically
+      select between them.
+    </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id279283"></a>3.4.3. Maximum Application Size</h3></div></div></div><p>
+      On ColdFire targets, uClinux segments memory into a 24-bit
+      flat address space and an 8-bit shared library identifier.
+      The maximum size of an executable is therefore 
+      0x00ffffff bytes, or approximately 16MB.
+      This is a fundamental constraint of the ColdFire uClinux kernel
+      and is not configurable by means of compiler options.
+    </p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch03s03.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="chap-target.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="ch03s05.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">3.3. Building uClinux Applications </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> 3.5. Shared Libraries</td></tr></table></div></body></html>
